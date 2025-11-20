@@ -98,7 +98,7 @@
             android:layout_height="79dp"
             android:background="@drawable/input_fondo"
             android:ems="10"
-            android:hint="INGRESE USUARIO"
+            android:hint="INGRESE EMAIL"
             android:inputType="text"
             android:textAlignment="center"
             android:textSize="16sp"

@@ -15,6 +15,7 @@ import com.android.volley.RequestQueue
 import com.android.volley.toolbox.JsonObjectRequest
 import com.android.volley.toolbox.Volley
 import org.json.JSONException
+import org.json.JSONObject
 
 class Registro : AppCompatActivity() {
 
@@ -59,10 +60,14 @@ class Registro : AppCompatActivity() {
 
         // 👉 Texto "¿Ya tienes cuenta? Inicia sesión"
         txtLogin2.setOnClickListener {
-            val intent = Intent(this, MainActivity::class.java)
-            startActivity(intent)
-            finish()
+            irAlLogin()
         }
+    }
+
+    private fun irAlLogin() {
+        val intent = Intent(this, MainActivity::class.java)
+        startActivity(intent)
+        finish() // Cierra Registro para que no se acumule en la pila
     }
 
     private fun registrarUsuario() {
@@ -74,6 +79,12 @@ class Registro : AppCompatActivity() {
         val sClave = clave.text.toString().trim()
         val sConfirm = confirmClave.text.toString().trim()
 
+        // Validaciones básicas
+        if (sRut.isEmpty() || sNombre.isEmpty() || sCorreo.isEmpty() || sClave.isEmpty()) {
+            Toast.makeText(this, "Complete todos los campos", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         if (sClave != sConfirm) {
             Toast.makeText(this, "Las contraseñas no coinciden", Toast.LENGTH_LONG).show()
             return
@@ -81,32 +92,34 @@ class Registro : AppCompatActivity() {
 
         val url = "http://3.208.190.223/registro.php"
 
-        val json = org.json.JSONObject().apply {
+        val json = JSONObject().apply {
             put("rut", sRut)
             put("nombre", sNombre)
             put("email", sCorreo)
             put("telefono", sTelefono)
-            put("password", sClave)
+            put("password", sClave) // Se envía plana, el PHP la hashea
         }
 
         val request = JsonObjectRequest(
             Request.Method.POST, url, json,
             { response ->
                 try {
-                    val success = response.getBoolean("success")
-                    val message = response.getString("message")
+                    // ⭐ CORRECCIÓN AQUÍ: Usamos 'estado' y 'msg'
+                    // optString es más seguro porque no crashea si el campo no existe
+                    val estado = response.optString("estado")
+                    val message = response.optString("msg")
 
                     Toast.makeText(this, message, Toast.LENGTH_LONG).show()
 
-                    if (success) {
-                        // Navegar al login luego de registrar
-                        val intent = Intent(this, MainActivity::class.java)
-                        startActivity(intent)
-                        finish()
+                    // Verificamos si el estado es "1" (Exitoso)
+                    if (estado == "1") {
+                        // Redirigir al Login (MainActivity)
+                        irAlLogin()
                     }
 
                 } catch (e: JSONException) {
                     e.printStackTrace()
+                    Toast.makeText(this, "Error procesando respuesta", Toast.LENGTH_SHORT).show()
                 }
             },
             { error ->
